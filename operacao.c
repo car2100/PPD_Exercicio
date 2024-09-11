@@ -9,9 +9,9 @@
 #define MAX_NUMBERS 500000000
 //#define MAX_NUMBERS 10
 #define MAX_VALUE 1000;
+#define NUM_THREADS 8
 
 float numbers[MAX_NUMBERS];
-int NUM_THREADS;
 unsigned int i;
 
 void* init_numbers(void* arg){
@@ -37,22 +37,11 @@ int show_numbers(){
   return 0;
 }
 
-int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        fprintf(stderr, "Usage: %s <number_of_threads>\n", argv[0]);
-        return 1;
-    }
-  struct timeval pop_tabela1, pop_tabela2, update_tabela1, update_tabela2;
-  double pop_total, update_total;
-
-  NUM_THREADS = atoi(argv[1]);
-  if (NUM_THREADS <= 0) {
-      fprintf(stderr, "Number of threads must be a positive integer.\n");
-      return 1;
-  }
-
-  pthread_t threads[NUM_THREADS];
-  int starts[NUM_THREADS];
+int main (int argc, char **argv){
+    struct timeval pop_tabela1, pop_tabela2, update_tabela1, update_tabela2;
+    double pop_total, update_total;
+		pthread_t threads[NUM_THREADS];
+    int starts[NUM_THREADS];
   
   srand(time(NULL));
 
