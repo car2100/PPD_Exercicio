@@ -17,8 +17,17 @@ unsigned int i;
 void* init_numbers(void* arg){
     int start = *(int*)arg;
     int end = start + MAX_NUMBERS / NUM_THREADS;
+    unsigned int seed = (unsigned int)time(NULL);
     for(int i = start; i < end; i++)
-        numbers[i] = ((float)rand()/(float)(RAND_MAX)) * MAX_VALUE;
+        numbers[i] = ((float)rand_r(&seed)/(float)(RAND_MAX)) * MAX_VALUE;
+    return NULL;
+}
+
+void* update_numbers(void* arg){
+    int start = *(int*)arg;
+    int end = start + MAX_NUMBERS / NUM_THREADS;
+    for(int i = start; i < end; i++)
+        numbers[i] = numbers[i] * 0.2 + numbers[i] / 0.3;
     return NULL;
 }
 
@@ -51,11 +60,14 @@ int main (int argc, char **argv){
     show_numbers();
   #endif
   gettimeofday(&update_tabela1, NULL);
-  for (i = 0; i < MAX_NUMBERS; i++){
-    numbers[i] =  numbers[i]*0.2 + numbers[i]/0.3;    
+  for(int i = 0; i < NUM_THREADS; i++){
+      pthread_create(&threads[i], NULL, update_numbers, &starts[i]);
+  }
+  for(int i = 0; i < NUM_THREADS; i++){
+      pthread_join(threads[i], NULL);
   }
   gettimeofday(&update_tabela2, NULL);
-	update_total = (update_tabela2.tv_sec - update_tabela1.tv_sec) + ((update_tabela2.tv_usec - update_tabela1.tv_usec)/1000000.0);
+  update_total = (update_tabela2.tv_sec - update_tabela1.tv_sec) + ((update_tabela2.tv_usec - update_tabela1.tv_usec)/1000000.0);
 
   #ifdef IMPRIME
     printf("Apos a operacao matematica\n"); 
