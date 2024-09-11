@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <sys/time.h>
+#include <pthread.h>
 
 //#define IMPRIME
 
@@ -10,12 +11,24 @@
 #define MAX_VALUE 1000;
 
 float numbers[MAX_NUMBERS];
+int NUM_THREADS;
 unsigned int i;
 
-int init_numbers(){
-  for(i = 0; i < MAX_NUMBERS; i++)
-    numbers[i] = ((float)rand()/(float)RAND_MAX) * MAX_VALUE;
-  return 0;
+void* init_numbers(void* arg){
+    int start = *(int*)arg;
+    int end = start + MAX_NUMBERS / NUM_THREADS;
+    unsigned int seed = (unsigned int)time(NULL);
+    for(int i = start; i < end; i++)
+        numbers[i] = ((float)rand_r(&seed)/(float)(RAND_MAX)) * MAX_VALUE;
+    return NULL;
+}
+
+void* update_numbers(void* arg){
+    int start = *(int*)arg;
+    int end = start + MAX_NUMBERS / NUM_THREADS;
+    for(int i = start; i < end; i++)
+        numbers[i] = numbers[i] * 0.2 + numbers[i] / 0.3;
+    return NULL;
 }
 
 int show_numbers(){
@@ -24,26 +37,55 @@ int show_numbers(){
   return 0;
 }
 
-int main (int argc, char **argv){
-  struct timeval t1, t2; 
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <number_of_threads>\n", argv[0]);
+        return 1;
+    }
+  struct timeval pop_tabela1, pop_tabela2, update_tabela1, update_tabela2;
+  double pop_total, update_total;
+
+  NUM_THREADS = atoi(argv[1]);
+  if (NUM_THREADS <= 0) {
+      fprintf(stderr, "Number of threads must be a positive integer.\n");
+      return 1;
+  }
+
+  pthread_t threads[NUM_THREADS];
+  int starts[NUM_THREADS];
   
   srand(time(NULL));
- 
-  init_numbers();
+
+  gettimeofday(&pop_tabela1, NULL);
+	for(int i = 0; i < NUM_THREADS; i++){
+			starts[i] = i * MAX_NUMBERS / NUM_THREADS;
+			pthread_create(&threads[i], NULL, init_numbers, &starts[i]);
+	}
+	for(int i = 0; i < NUM_THREADS; i++){
+			pthread_join(threads[i], NULL);
+	}
+  gettimeofday(&pop_tabela2, NULL);
+  pop_total = (pop_tabela2.tv_sec - pop_tabela1.tv_sec) + ((pop_tabela2.tv_usec - pop_tabela1.tv_usec)/1000000.0);
 
   #ifdef IMPRIME
     show_numbers();
   #endif
- 
-  for (i = 0; i < MAX_NUMBERS; i++){
-    numbers[i] =  numbers[i]*0.2 + numbers[i]/0.3;    
-  }  
+  gettimeofday(&update_tabela1, NULL);
+  for(int i = 0; i < NUM_THREADS; i++){
+      pthread_create(&threads[i], NULL, update_numbers, &starts[i]);
+  }
+  for(int i = 0; i < NUM_THREADS; i++){
+      pthread_join(threads[i], NULL);
+  }
+  gettimeofday(&update_tabela2, NULL);
+  update_total = (update_tabela2.tv_sec - update_tabela1.tv_sec) + ((update_tabela2.tv_usec - update_tabela1.tv_usec)/1000000.0);
 
   #ifdef IMPRIME
     printf("Apos a operacao matematica\n"); 
     show_numbers();
   #endif
 
-  printf("Total time: %f\n",t_total);
+  printf("Populate Table Time: %f\n",pop_total);
+  printf("Update Table Time: %f\n",update_total);
   return 0;
 }

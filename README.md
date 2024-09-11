@@ -1,2 +1,2 @@
-gcc operacao2.c -o operacao -lpthread<br/>
-time nice -20 ./operacao
+gcc operacao.c -o operacao -lpthread<br/>
+time ./operacao <NUM_THREAD>
